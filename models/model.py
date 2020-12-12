@@ -115,7 +115,7 @@ class StockInventoryLine(models.Model):
 
     @api.onchange('product_id')
     def _onchange_product(self):
-        res = super(StockInventoryLine, self).onchange_product_id()
+        res = super(StockInventoryLine, self)._onchange_product()
         if self.product_id:
             self.product_uom_id = self.product_id.get_sale_default_uom_id()
         if res.get('domain') and self.product_id:
