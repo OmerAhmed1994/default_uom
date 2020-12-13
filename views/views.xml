@@ -1,15 +1,15 @@
 <?xml version="1.0"?>
 <odoo>
     <data>
-        <record id="product_template_form_inherit" model="ir.ui.view">
+        <record id="product_template_form_view" model="ir.ui.view">
             <field name="name">product.template.form.inherit</field>
             <field name="model">product.template</field>
-            <field name="inherit_id" ref="product.product_template_only_form_view" />
+            <field name="inherit_id" ref="product.product_template_form_view" />
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='uom_po_id']" position="after">
                     <field name="default_uom_id" />
                 </xpath>
-                <button name="toggle_active" position="before">
+                <xpath expr="//div[@name='button_box']/button" position="before">
                     <button type="object"
                         name="action_open_quants"
                         attrs="{'invisible':[('type', '!=', 'product')]}"
@@ -22,7 +22,7 @@
                             <span class="o_stat_text">On Hand</span>
                         </div>
                     </button>
-                </button>
+                </xpath>
             </field>
         </record>
 
@@ -30,6 +30,18 @@
             <field name="name">product.template.view.list.inherit</field>
             <field name="model">product.template</field>
             <field name="inherit_id" ref="product.product_template_tree_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='uom_id']" position="after">
+                    <field name="default_uom_qty_available" />
+                    <field name="default_uom_id" />
+                </xpath>
+            </field>
+        </record>
+
+        <record id="product_product_tree_view" model="ir.ui.view">
+            <field name="name">product.product.view.list.inherit</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_product_tree_view"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='uom_id']" position="after">
                     <field name="default_uom_qty_available" />
