@@ -125,10 +125,11 @@ class StockMove(models.Model):
         if self.product_id:
             return self.product_id.get_sale_default_uom_id()
 
-    default_uom_id = fields.Many2one('uom.uom', 'Default UoM', default=get_default_uom_id)
+    default_uom_id = fields.Many2one(
+        'uom.uom', 'Default UoM', readonly=True, default=get_default_uom_id)
 
     default_uom_qty = fields.Float(
-        compute='_compute_default_uom_qty', inverse="_set_default_uom_qty", string='Default UoM Qty')
+        compute='_compute_default_uom_qty',  string='Default UoM Qty')
 
     @api.depends('default_uom_id', 'product_uom', 'product_uom_qty')
     def _compute_default_uom_qty(self):
@@ -138,12 +139,13 @@ class StockMove(models.Model):
                 rec.default_uom_qty = rec.product_uom._compute_quantity(
                     rec.product_uom_qty, rec.default_uom_id)
 
-    @api.onchange('product_uom_qty', 'default_uom_qty')
-    def _set_default_uom_qty(self):
-        for rec in self:
-            if rec.product_uom and rec.default_uom_id:
-                rec.product_uom_qty = rec.default_uom_id._compute_quantity(
-                    rec.default_uom_qty, rec.product_uom)
+    # inverse = "_set_default_uom_qty",
+    # @api.onchange('product_uom_qty', 'default_uom_qty')
+    # def _set_default_uom_qty(self):
+    #     for rec in self:
+    #         if rec.product_uom and rec.default_uom_id:
+    #             rec.product_uom_qty = rec.default_uom_id._compute_quantity(
+    #                 rec.default_uom_qty, rec.product_uom)
 
     @api.onchange('product_id')
     def onchange_product_id(self):

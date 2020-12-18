@@ -78,5 +78,28 @@
                 </xpath>
             </field>
         </record>
+
+        <template id="report_picking" name="report_picking" inherit_id="stock.report_picking">
+            <xpath expr="//table[@t-if='o.move_line_ids']/tbody/t/t/tr/td[2]" position="replace">
+                 <td>
+                    <span t-field="ml.default_uom_qty"/>
+                    <span t-field="ml.default_uom_id" groups="uom.group_uom"/>
+                </td>
+            </xpath>
+        </template>
+        <template id="report_delivery_document" name="report_delivery_document" inherit_id="stock.report_delivery_document">
+            <xpath expr="//tr[@t-foreach='lines']/td[2]" position="replace">
+                <td>
+                    <span t-field="move.default_uom_qty"/>
+                    <span t-field="move.default_uom_id" groups="uom.group_uom"/>
+                </td>
+            </xpath>
+            <xpath expr="//tr[@t-foreach='o.move_line_ids']/td[4]" position="replace">
+                <td class="text-center">
+                    <span t-field="move_line.move_id.default_uom_qty"/>
+                    <span t-field="move_line.move_id.default_uom_id" groups="uom.group_uom"/>
+                </td>
+            </xpath>
+        </template>
     </data>
 </odoo>
