@@ -66,7 +66,7 @@ class AcconutInvoiceLine(models.Model):
 
 class SaleOrderLine(models.Model):
     _inherit = 'sale.order.line'
-
+    
     @api.multi
     @api.onchange('product_id')
     def product_id_change(self):
@@ -78,66 +78,33 @@ class SaleOrderLine(models.Model):
                 res['domain']['product_uom'] = [
                     ('id', 'in', self.product_id.get_domain_ids())]
         return res
+    
+    @api.multi
+    def _prepare_procurement_values(self, group_id=False):
+        res = super(SaleOrderLine, self)._prepare_procurement_values(group_id)
+        # I am assuming field name in both sale.order.line and in stock.move are same and called 'YourField'
+        res.update({'default_uom_id': self.product_uom.id})
+        return res
 
+
+class StockRuleInherit(models.Model):
+    _inherit = 'stock.rule'
+
+    def _get_stock_move_values(self, product_id, product_qty, product_uom, location_id, name, origin, values, group_id):
+        res = super(StockRuleInherit, self)._get_stock_move_values(product_id, product_qty, product_uom, location_id,
+                                                                name, origin, values, group_id)
+        res['default_uom_id'] = values.get('default_uom_id', False)
+        return res
 
 class PurchaseOrderLine(models.Model):
     _inherit = 'purchase.order.line'
 
     @api.multi
     def _prepare_stock_moves(self, picking):
-        """ Prepare the stock moves data for one order line. This function returns a list of
-        dictionary ready to be used in stock.move's create()
-        """
-        self.ensure_one()
-        res = []
-        if self.product_id.type not in ['product', 'consu']:
-            return res
-        qty = 0.0
-        price_unit = self._get_stock_move_price_unit()
-        for move in self.move_ids.filtered(lambda x: x.state != 'cancel' and not x.location_dest_id.usage == "supplier"):
-            qty += move.product_uom._compute_quantity(
-                move.product_uom_qty, self.product_uom, rounding_method='HALF-UP')
-        template = {
-            # truncate to 2000 to avoid triggering index limit error
-            # TODO: remove index in master?
-            'name': (self.name or '')[:2000],
-            'product_id': self.product_id.id,
-            'product_uom': self.product_uom.id,
-            'product_uom_qty': self.product_qty,
-            'date': self.order_id.date_order,
-            'date_expected': self.date_planned,
-            'location_id': self.order_id.partner_id.property_stock_supplier.id,
-            'location_dest_id': self.order_id._get_destination_location(),
-            'picking_id': picking.id,
-            'partner_id': self.order_id.dest_address_id.id,
-            'move_dest_ids': [(4, x) for x in self.move_dest_ids.ids],
-            'state': 'draft',
-            'purchase_line_id': self.id,
-            'company_id': self.order_id.company_id.id,
-            'price_unit': price_unit,
-            'picking_type_id': self.order_id.picking_type_id.id,
-            'group_id': self.order_id.group_id.id,
-            'origin': self.order_id.name,
-            'route_ids': self.order_id.picking_type_id.warehouse_id and [(6, 0, [x.id for x in self.order_id.picking_type_id.warehouse_id.route_ids])] or [],
-            'warehouse_id': self.order_id.picking_type_id.warehouse_id.id,
-        }
-        # diff_quantity = self.product_qty - qty
-        # if float_compare(diff_quantity, 0.0,  precision_rounding=self.product_uom.rounding) > 0:
-        #     quant_uom = self.product_id.uom_id
-        #     get_param = self.env['ir.config_parameter'].sudo().get_param
-        #     # Always call '_compute_quantity' to round the diff_quantity. Indeed, the PO quantity
-        #     # is not rounded automatically following the UoM.
-        #     if get_param('stock.propagate_uom') != '1':
-        #         product_qty = self.product_uom._compute_quantity(
-        #             diff_quantity, quant_uom, rounding_method='HALF-UP')
-        #         template['product_uom'] = quant_uom.id
-        #         template['product_uom_qty'] = product_qty
-        #     else:
-        #         template['product_uom_qty'] = self.product_uom._compute_quantity(
-        #             diff_quantity, self.product_uom, rounding_method='HALF-UP')
-        res.append(template)
+        res = super(PurchaseOrderLine, self)._prepare_stock_moves(picking)
+        if res and self.product_uom:
+            res[0]['default_uom_id'] = self.product_uom.id
         return res
-
 
     @api.onchange('product_id')
     def onchange_product_id(self):
@@ -154,14 +121,41 @@ class PurchaseOrderLine(models.Model):
 class StockMove(models.Model):
     _inherit = 'stock.move'
 
+    def get_default_uom_id(self):
+        if self.product_id:
+            return self.product_id.get_sale_default_uom_id()
+
+    default_uom_id = fields.Many2one('uom.uom', 'Default UoM', default=get_default_uom_id)
+
+    default_uom_qty = fields.Float(
+        compute='_compute_default_uom_qty', inverse="_set_default_uom_qty", string='Default UoM Qty')
+
+    @api.depends('default_uom_id', 'product_uom', 'product_uom_qty')
+    def _compute_default_uom_qty(self):
+        for rec in self:
+            rec.default_uom_qty = 0
+            if rec.product_uom and rec.default_uom_id:
+                rec.default_uom_qty = rec.product_uom._compute_quantity(
+                    rec.product_uom_qty, rec.default_uom_id)
+
+    @api.onchange('product_uom_qty', 'default_uom_qty')
+    def _set_default_uom_qty(self):
+        for rec in self:
+            if rec.product_uom and rec.default_uom_id:
+                rec.product_uom_qty = rec.default_uom_id._compute_quantity(
+                    rec.default_uom_qty, rec.product_uom)
+
     @api.onchange('product_id')
     def onchange_product_id(self):
         res = super(StockMove, self).onchange_product_id()
         if self.product_id:
             self.product_uom = self.product_id.get_sale_default_uom_id()
+            self.default_uom_id = self.product_id.get_sale_default_uom_id()
         if res.get('domain') and self.product_id:
             if res['domain'].get('product_uom'):
                 res['domain']['product_uom'] = [
+                    ('id', 'in', self.product_id.get_domain_ids())]
+                res['domain']['default_uom_id'] = [
                     ('id', 'in', self.product_id.get_domain_ids())]
         return res
 
