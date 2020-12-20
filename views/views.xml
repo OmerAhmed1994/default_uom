@@ -66,5 +66,17 @@
                 </xpath>
             </field>
         </record>
+        <template id="external_layout_boxed" name="external_layout_boxed" inherit_id="web.external_layout_boxed">
+            <xpath expr="//div[hasclass('o_report_layout_boxed')]" position="inside">
+                <link rel="stylesheet" href="/default_uom/static/src/css/style.css" />
+            </xpath>
+        </template>
+        
+        <template id="assets_backend" name="font assets" inherit_id="web.assets_backend">
+            <xpath expr="." position="inside">
+                <link rel="stylesheet" href="/default_uom/static/src/css/style.css" />
+            </xpath>
+        </template>
+
     </data>
 </odoo>
