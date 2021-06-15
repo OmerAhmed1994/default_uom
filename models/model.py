@@ -20,8 +20,7 @@ class ProductTemplate(models.Model):
         for rec in self:
             rec.default_uom_qty_available = 0
             if rec.uom_id and rec.default_uom_id:
-                rec.default_uom_qty_available = rec.uom_id._compute_quantity(
-                    rec.qty_available, rec.default_uom_id)
+                rec.default_uom_qty_available = rec.uom_id._compute_quantity(rec.qty_available, rec.default_uom_id,round=False)
 
 
 class ProductProduct(models.Model):
