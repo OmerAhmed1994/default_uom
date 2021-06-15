@@ -125,11 +125,9 @@ class StockMove(models.Model):
         if self.product_id:
             return self.product_id.get_sale_default_uom_id()
 
-    default_uom_id = fields.Many2one(
-        'uom.uom', 'Default UoM', readonly=True, default=get_default_uom_id)
+    default_uom_id = fields.Many2one('uom.uom', 'Default UoM', readonly=True, default=get_default_uom_id)
 
-    default_uom_qty = fields.Float(
-        compute='_compute_default_uom_qty',  string='Default UoM Qty')
+    default_uom_qty = fields.Float(compute='_compute_default_uom_qty',  string='Default UoM Qty')
 
     @api.depends('default_uom_id', 'product_uom', 'product_uom_qty')
     def _compute_default_uom_qty(self):

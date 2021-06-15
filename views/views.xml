@@ -72,7 +72,7 @@
             <field name="inherit_id" ref="stock.view_picking_form"/>
             <field name="arch" type="xml">
                 <xpath expr="//field[@name='move_ids_without_package']/tree/field[@name='product_uom']" position="after">
-                    <field name="default_uom_id" />
+                    <field name="default_uom_id" readonly="1" force_save="1"/>
                     <field name="default_uom_qty" />
                 </xpath>
             </field>
