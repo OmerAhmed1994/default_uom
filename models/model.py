@@ -54,9 +54,9 @@ class AcconutInvoiceLine(models.Model):
     @api.onchange('product_id')
     def _onchange_product_id(self):
         res = super(AcconutInvoiceLine, self)._onchange_product_id()
-        if self.invoice_id.type in ['out_refand', 'out_invoice'] and self.product_id:
+        if self.invoice_id.type in ['out_refund', 'out_invoice'] and self.product_id:
             self.uom_id = self.product_id.get_sale_default_uom_id()
-        elif self.invoice_id.type in ['in_refand', 'in_invoice'] and self.product_id:
+        elif self.invoice_id.type in ['in_refund', 'in_invoice'] and self.product_id:
             self.uom_id = self.product_id.get_purchase_default_uom_id()
         if res.get('domain') and self.product_id:
             if res['domain'].get('uom_id'):
